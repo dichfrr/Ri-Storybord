@@ -11,70 +11,80 @@
   <main class="app-shell">
     <header class="topbar">
       <div class="brand"><span class="brand-mark">CS</span><span>CineSetup</span><em>AI</em></div>
-      <span class="status"><i></i> MVP / Demo analysis</span>
+      <div class="top-actions"><span class="status"><i></i><span data-i18n="status">MVP / Demo analysis</span></span><button class="lang-btn" id="langBtn">فارسی</button></div>
     </header>
 
     <section class="hero">
-      <p class="eyebrow">CINEMATOGRAPHY BREAKDOWN</p>
-      <h1>Reverse-engineer the shot.</h1>
-      <p class="subhead">Drop a film frame. Get an estimated camera, lens, lighting, blocking and a visual setup diagram.</p>
+      <p class="eyebrow" data-i18n="eyebrow">CINEMATOGRAPHY BREAKDOWN</p>
+      <h1 data-i18n="heroTitle">Reverse-engineer the shot.</h1>
+      <p class="subhead" data-i18n="heroSub">Drop a film frame. Get an estimated camera, lens, lighting, blocking and a visual setup diagram.</p>
     </section>
 
     <section class="workspace">
       <div class="panel upload-panel">
-        <div class="panel-head"><span>01</span><h2>Reference frame</h2></div>
+        <div class="panel-head"><span>01</span><h2 data-i18n="reference">Reference frame</h2></div>
         <label class="dropzone" id="dropzone" for="fileInput">
           <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" />
           <div id="emptyState">
             <div class="upload-icon">＋</div>
-            <strong>Drop a frame here</strong>
-            <span>JPG, PNG or WebP · up to 20 MB</span>
+            <strong data-i18n="drop">Drop a frame here</strong>
+            <span data-i18n="formats">JPG, PNG or WebP · up to 20 MB</span>
           </div>
           <img id="preview" alt="Uploaded reference frame" hidden />
         </label>
         <div class="controls">
-          <button class="primary" id="analyzeBtn" disabled>Analyze frame <span>↗</span></button>
-          <button class="ghost" id="resetBtn" hidden>Reset</button>
+          <button class="primary" id="analyzeBtn" disabled><span data-i18n="analyze">Analyze frame</span> <span>↗</span></button>
+          <button class="ghost" id="resetBtn" hidden data-i18n="reset">Reset</button>
         </div>
-        <p class="fineprint">The MVP reports visual estimates. It cannot reliably identify the exact camera, lens or fixture from one frame.</p>
+        <p class="fineprint" data-i18n="fineprint">The MVP reports visual estimates. It cannot reliably identify the exact camera, lens or fixture from one frame.</p>
       </div>
 
       <div class="panel breakdown-panel">
-        <div class="panel-head"><span>02</span><h2>Shot breakdown</h2></div>
-        <div id="emptyBreakdown" class="empty-result">Upload a frame to generate the breakdown.</div>
+        <div class="panel-head"><span>02</span><h2 data-i18n="plan">Cinematography plan</h2></div>
+        <div id="emptyBreakdown" class="empty-result" data-i18n="empty">Upload a frame to generate the professional breakdown.</div>
         <div id="results" hidden>
-          <div class="confidence"><span>VISUAL CONFIDENCE</span><b id="confidenceValue">—</b></div>
+          <div class="confidence"><span data-i18n="confidence">VISUAL CONFIDENCE</span><b id="confidenceValue">—</b></div>
           <div class="metric-grid">
-            <article><small>SHOT</small><strong id="shotType">—</strong></article>
-            <article><small>FOCAL LENGTH</small><strong id="focalLength">—</strong></article>
-            <article><small>CAMERA HEIGHT</small><strong id="cameraHeight">—</strong></article>
-            <article><small>DEPTH OF FIELD</small><strong id="dof">—</strong></article>
+            <article><small data-i18n="shot">SHOT</small><strong id="shotType">—</strong></article>
+            <article><small data-i18n="focal">FOCAL LENGTH</small><strong id="focalLength">—</strong></article>
+            <article><small data-i18n="height">CAMERA HEIGHT</small><strong id="cameraHeight">—</strong></article>
+            <article><small data-i18n="dof">DEPTH OF FIELD</small><strong id="dof">—</strong></article>
           </div>
+          <div class="section-label" data-i18n="cameraSection">CAMERA & COMPOSITION</div>
           <div class="analysis-list">
-            <div><span>KEY LIGHT</span><strong id="keyLight">—</strong></div>
-            <div><span>FILL</span><strong id="fillLight">—</strong></div>
-            <div><span>BACK / EDGE</span><strong id="backLight">—</strong></div>
-            <div><span>COLOR / CONTRAST</span><strong id="colorLook">—</strong></div>
+            <div><span data-i18n="cameraPos">CAMERA POSITION</span><strong id="cameraPosition">—</strong></div>
+            <div><span data-i18n="framing">FRAMING / PERSPECTIVE</span><strong id="framing">—</strong></div>
+            <div><span data-i18n="subjectPos">SUBJECT POSITION</span><strong id="subjectPosition">—</strong></div>
           </div>
-          <div class="recreation"><small>RECREATION APPROACH</small><p id="recreationText">—</p></div>
+          <div class="section-label" data-i18n="lightSection">LIGHTING</div>
+          <div class="analysis-list">
+            <div><span data-i18n="key">KEY LIGHT</span><strong id="keyLight">—</strong></div>
+            <div><span data-i18n="fill">FILL / NEGATIVE FILL</span><strong id="fillLight">—</strong></div>
+            <div><span data-i18n="back">BACK / EDGE</span><strong id="backLight">—</strong></div>
+            <div><span data-i18n="practical">PRACTICALS</span><strong id="practicals">—</strong></div>
+          </div>
+          <div class="section-label" data-i18n="lookSection">LOOK</div>
+          <div class="analysis-list compact">
+            <div><span data-i18n="color">COLOR / CONTRAST</span><strong id="colorLook">—</strong></div>
+            <div><span data-i18n="cameraSettings">EST. CAMERA SETTINGS</span><strong id="cameraSettings">—</strong></div>
+          </div>
+          <div class="recreation"><small data-i18n="recreation">RECREATION APPROACH</small><p id="recreationText">—</p></div>
         </div>
       </div>
     </section>
 
     <section class="panel diagram-panel">
-      <div class="panel-head"><span>03</span><h2>Lighting diagram</h2><div class="view-toggle"><button class="active" data-view="top">TOP VIEW</button><button data-view="side">SIDE VIEW</button></div></div>
+      <div class="panel-head"><span>03</span><h2 data-i18n="diagramTitle">Lighting diagram</h2><div class="view-toggle"><button class="active" data-view="top" data-i18n="top">TOP VIEW</button><button data-view="side" data-i18n="side">SIDE VIEW</button></div></div>
       <div class="diagram-wrap">
         <svg id="diagram" viewBox="0 0 900 470" role="img" aria-label="Estimated cinematography lighting diagram">
           <rect x="0" y="0" width="900" height="470" class="diagram-bg"/>
-          <g id="diagramContent">
-            <text x="450" y="235" text-anchor="middle" class="diagram-placeholder">UPLOAD A FRAME TO BUILD THE SETUP</text>
-          </g>
+          <g id="diagramContent"><text x="450" y="235" text-anchor="middle" class="diagram-placeholder" data-i18n="diagramEmpty">UPLOAD A FRAME TO BUILD THE SETUP</text></g>
         </svg>
       </div>
-      <div class="legend"><span><i class="camera-dot"></i> CAMERA</span><span><i class="subject-dot"></i> SUBJECT</span><span><i class="light-dot"></i> LIGHT</span><span><i class="beam-line"></i> ESTIMATED BEAM</span></div>
+      <div class="legend"><span><i class="camera-dot"></i><span data-i18n="cameraLegend">CAMERA</span></span><span><i class="subject-dot"></i><span data-i18n="subjectLegend">SUBJECT</span></span><span><i class="light-dot"></i><span data-i18n="lightLegend">LIGHT</span></span><span><i class="beam-line"></i><span data-i18n="beamLegend">ESTIMATED BEAM</span></span></div>
     </section>
 
-    <footer><span>CineSetup AI</span><span>Built for filmmakers · estimates, not ground truth</span></footer>
+    <footer><span>CineSetup AI</span><span data-i18n="footer">Built for filmmakers · estimates, not ground truth</span></footer>
   </main>
   <script src="app.js"></script>
 </body>
