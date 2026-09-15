@@ -7,8 +7,26 @@ const resetBtn = document.getElementById('resetBtn');
 const emptyBreakdown = document.getElementById('emptyBreakdown');
 const results = document.getElementById('results');
 const diagramContent = document.getElementById('diagramContent');
+const langBtn = document.getElementById('langBtn');
 let currentFile = null;
 let currentView = 'top';
+let lang = localStorage.getItem('cinesetup-lang') || 'en';
+let currentAnalysis = null;
+
+const translations = {
+  en:{status:'MVP / Demo analysis',eyebrow:'CINEMATOGRAPHY BREAKDOWN',heroTitle:'Reverse-engineer the shot.',heroSub:'Drop a film frame. Get an estimated camera, lens, lighting, blocking and a visual setup diagram.',reference:'Reference frame',drop:'Drop a frame here',formats:'JPG, PNG or WebP · up to 20 MB',analyze:'Analyze frame',reset:'Reset',fineprint:'The MVP reports visual estimates. It cannot reliably identify the exact camera, lens or fixture from one frame.',plan:'Cinematography plan',empty:'Upload a frame to generate the professional breakdown.',confidence:'VISUAL CONFIDENCE',shot:'SHOT',focal:'FOCAL LENGTH',height:'CAMERA HEIGHT',dof:'DEPTH OF FIELD',cameraSection:'CAMERA & COMPOSITION',cameraPos:'CAMERA POSITION',framing:'FRAMING / PERSPECTIVE',subjectPos:'SUBJECT POSITION',lightSection:'LIGHTING',key:'KEY LIGHT',fill:'FILL / NEGATIVE FILL',back:'BACK / EDGE',practical:'PRACTICALS',lookSection:'LOOK',color:'COLOR / CONTRAST',cameraSettings:'EST. CAMERA SETTINGS',recreation:'RECREATION APPROACH',diagramTitle:'Lighting diagram',top:'TOP VIEW',side:'SIDE VIEW',diagramEmpty:'UPLOAD A FRAME TO BUILD THE SETUP',cameraLegend:'CAMERA',subjectLegend:'SUBJECT',lightLegend:'LIGHT',beamLegend:'ESTIMATED BEAM',footer:'Built for filmmakers · estimates, not ground truth'},
+  fa:{status:'نسخه نمایشی / تحلیل آزمایشی',eyebrow:'تحلیل فیلمبرداری',heroTitle:'شات را مهندسی معکوس کن.',heroSub:'یک فریم از فیلم بده؛ جای دوربین، لنز، نور، بلاکینگ و دیاگرام اجرای شات را تخمین می‌زنیم.',reference:'فریم مرجع',drop:'فریم را اینجا رها کنید',formats:'JPG، PNG یا WebP · حداکثر ۲۰ مگابایت',analyze:'تحلیل فریم',reset:'ریست',fineprint:'این نسخه تخمین‌های بصری ارائه می‌دهد و از روی یک فریم نمی‌تواند دوربین، لنز یا مدل دقیق چراغ را با قطعیت تشخیص دهد.',plan:'پلن فیلمبرداری',empty:'برای ساخت پلن حرفه‌ای، یک فریم آپلود کنید.',confidence:'میزان اطمینان بصری',shot:'نوع شات',focal:'فاصله کانونی',height:'ارتفاع دوربین',dof:'عمق میدان',cameraSection:'دوربین و ترکیب‌بندی',cameraPos:'موقعیت دوربین',framing:'کادربندی / پرسپکتیو',subjectPos:'موقعیت سوژه',lightSection:'نورپردازی',key:'نور اصلی',fill:'فیل / نگاتیو فیل',back:'بک‌لایت / اِج',practical:'نورهای داخل صحنه',lookSection:'لوک تصویر',color:'رنگ / کنتراست',cameraSettings:'تنظیمات تخمینی دوربین',recreation:'روش بازسازی شات',diagramTitle:'دیاگرام نورپردازی',top:'نمای بالا',side:'نمای جانبی',diagramEmpty:'برای ساخت ستاپ، یک فریم آپلود کنید',cameraLegend:'دوربین',subjectLegend:'سوژه',lightLegend:'نور',beamLegend:'جهت تقریبی نور',footer:'ساخته‌شده برای فیلمسازها · تخمین است، حقیقت قطعی نیست'}};
+
+function applyLanguage(){
+  const t=translations[lang];
+  document.documentElement.lang=lang;
+  document.body.classList.toggle('rtl',lang==='fa');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const key=el.dataset.i18n;if(t[key])el.textContent=t[key];});
+  langBtn.textContent=lang==='fa'?'English':'فارسی';
+  if(currentAnalysis) renderResults(currentAnalysis);
+  drawDiagram(currentView,currentAnalysis);
+}
+langBtn.addEventListener('click',()=>{lang=lang==='en'?'fa':'en';localStorage.setItem('cinesetup-lang',lang);applyLanguage();});
 
 fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 ['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
@@ -16,117 +34,17 @@ fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 dropzone.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
 analyzeBtn.addEventListener('click', analyze);
 resetBtn.addEventListener('click', reset);
-document.querySelectorAll('.view-toggle button').forEach(button => button.addEventListener('click', () => {
-  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
-  button.classList.add('active');
-  currentView = button.dataset.view;
-  if (results.hidden) return;
-  drawDiagram(currentView);
-}));
+document.querySelectorAll('.view-toggle button').forEach(button => button.addEventListener('click', () => {document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));button.classList.add('active');currentView=button.dataset.view;if(!results.hidden)drawDiagram(currentView,currentAnalysis);}));
 
-function handleFile(file) {
-  if (!file || !file.type.startsWith('image/')) return;
-  if (file.size > 20 * 1024 * 1024) { alert('Please choose an image under 20 MB.'); return; }
-  currentFile = file;
-  const url = URL.createObjectURL(file);
-  preview.src = url;
-  preview.hidden = false;
-  emptyState.hidden = true;
-  analyzeBtn.disabled = false;
-  resetBtn.hidden = false;
-}
+function handleFile(file){if(!file||!file.type.startsWith('image/'))return;if(file.size>20*1024*1024){alert(lang==='fa'?'لطفاً تصویری کمتر از ۲۰ مگابایت انتخاب کنید.':'Please choose an image under 20 MB.');return;}currentFile=file;const url=URL.createObjectURL(file);preview.src=url;preview.hidden=false;emptyState.hidden=true;analyzeBtn.disabled=false;resetBtn.hidden=false;}
 
-function analyze() {
-  if (!currentFile) return;
-  analyzeBtn.disabled = true;
-  analyzeBtn.innerHTML = 'Analyzing visual cues…';
-  setTimeout(() => {
-    // Demo adapter. Replace analyzeFrame() with a server/model call when a vision model is connected.
-    const analysis = analyzeFrameDemo();
-    renderResults(analysis);
-    drawDiagram(currentView, analysis);
-    analyzeBtn.disabled = false;
-    analyzeBtn.innerHTML = 'Re-analyze frame <span>↗</span>';
-  }, 850);
-}
+function analyze(){if(!currentFile)return;analyzeBtn.disabled=true;analyzeBtn.innerHTML=lang==='fa'?'در حال تحلیل…':'Analyzing visual cues…';setTimeout(()=>{currentAnalysis=analyzeFrameDemo();renderResults(currentAnalysis);drawDiagram(currentView,currentAnalysis);analyzeBtn.disabled=false;analyzeBtn.innerHTML=(lang==='fa'?'تحلیل مجدد فریم':'Re-analyze frame')+' <span>↗</span>';},850);}
 
-function analyzeFrameDemo() {
-  return {
-    confidence: 'MEDIUM',
-    shotType: 'Medium / portrait',
-    focalLength: '~50–65 mm',
-    cameraHeight: 'Eye level',
-    dof: 'Shallow',
-    keyLight: 'Soft · camera left · ~45°',
-    fillLight: 'Low · negative fill likely',
-    backLight: 'Possible edge from rear right',
-    colorLook: 'Warm practical · controlled contrast',
-    recreation: 'Start with one large soft key 45° camera-left. Keep the fill at least 1–2 stops under the key, add negative fill on the opposite side, and use a small harder source behind the subject if an edge is visible. Match the background practicals separately.'
-  };
-}
+function analyzeFrameDemo(){return {confidence:'MEDIUM',shotType:lang==='fa'?'مدیوم / پرتره':'Medium / portrait',focalLength:'~50–65 mm',cameraHeight:lang==='fa'?'هم‌سطح چشم':'Eye level',dof:lang==='fa'?'کم‌عمق':'Shallow',cameraPosition:lang==='fa'?'۳/۴ روبه‌روی سوژه، کمی خارج از محور':'Three-quarter frontal, slightly off-axis',framing:lang==='fa'?'پرسپکتیو طبیعی، فشردگی متوسط':'Natural perspective, moderate compression',subjectPosition:lang==='fa'?'مرکز کادر با فضای تنفس در جهت نگاه':'Centered with look-room',keyLight:lang==='fa'?'نرم · سمت چپ دوربین · حدود ۴۵°':'Soft · camera left · ~45°',fillLight:lang==='fa'?'کم · نگاتیو فیل محتمل':'Low · negative fill likely',backLight:lang==='fa'?'لبه‌ی احتمالی از پشتِ راست':'Possible edge from rear right',practicals:lang==='fa'?'گرم · منابع پس‌زمینه کنترل‌شده':'Warm · controlled background sources',colorLook:lang==='fa'?'گرم، کنتراست کنترل‌شده، سایه‌های عمیق':'Warm practicals, controlled contrast, deep shadows',cameraSettings:lang==='fa'?'f/1.8–2.8 · 1/48–1/50s · ISO متوسط':'f/1.8–2.8 · 1/48–1/50s · moderate ISO',recreation:lang==='fa'?'یک سافت‌لایت بزرگ را حدود ۴۵ درجه سمت چپ دوربین قرار بده. سمت مقابل را با نگاتیو فیل کنترل کن و فیل را حداقل ۱ تا ۲ استاپ پایین‌تر نگه دار. اگر لبه‌ی نور دیده می‌شود، یک منبع کوچک‌تر و سخت‌تر پشت سوژه اضافه کن. نورهای داخل صحنه را جداگانه با نوردهی پس‌زمینه هماهنگ کن.':'Start with one large soft key about 45° camera-left. Control the opposite side with negative fill and keep fill at least 1–2 stops under key. If an edge is visible, add a smaller harder source behind the subject. Balance practicals separately against the background exposure.'};}
 
-function renderResults(a) {
-  emptyBreakdown.hidden = true;
-  results.hidden = false;
-  document.getElementById('confidenceValue').textContent = a.confidence;
-  document.getElementById('shotType').textContent = a.shotType;
-  document.getElementById('focalLength').textContent = a.focalLength;
-  document.getElementById('cameraHeight').textContent = a.cameraHeight;
-  document.getElementById('dof').textContent = a.dof;
-  document.getElementById('keyLight').textContent = a.keyLight;
-  document.getElementById('fillLight').textContent = a.fillLight;
-  document.getElementById('backLight').textContent = a.backLight;
-  document.getElementById('colorLook').textContent = a.colorLook;
-  document.getElementById('recreationText').textContent = a.recreation;
-}
+function renderResults(a){emptyBreakdown.hidden=true;results.hidden=false;const ids=['confidenceValue','shotType','focalLength','cameraHeight','dof','cameraPosition','framing','subjectPosition','keyLight','fillLight','backLight','practicals','colorLook','cameraSettings','recreationText'];const vals=[a.confidence,a.shotType,a.focalLength,a.cameraHeight,a.dof,a.cameraPosition,a.framing,a.subjectPosition,a.keyLight,a.fillLight,a.backLight,a.practicals,a.colorLook,a.cameraSettings,a.recreation];ids.forEach((id,i)=>document.getElementById(id).textContent=vals[i]);}
 
-function drawDiagram(view = 'top') {
-  const common = `<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#e7ff5a"/></marker></defs>`;
-  if (view === 'side') {
-    diagramContent.innerHTML = `${common}
-      <line x1="90" y1="370" x2="810" y2="370" stroke="#222" stroke-width="2"/>
-      <circle cx="475" cy="285" r="28" fill="none" stroke="#aaa"/>
-      <line x1="475" y1="313" x2="475" y2="365" stroke="#aaa" stroke-width="2"/>
-      <line x1="445" y1="340" x2="505" y2="340" stroke="#aaa"/>
-      <rect x="165" y="205" width="60" height="48" rx="4" fill="#151515" stroke="#e7ff5a"/>
-      <text x="195" y="195" text-anchor="middle" fill="#e7ff5a" font-size="11" font-family="DM Mono">KEY · SOFT</text>
-      <line x1="225" y1="235" x2="445" y2="292" stroke="#e7ff5a" stroke-opacity=".45" stroke-dasharray="6 7" marker-end="url(#arrow)"/>
-      <rect x="675" y="130" width="55" height="42" rx="4" fill="#151515" stroke="#aaa"/>
-      <text x="702" y="118" text-anchor="middle" fill="#aaa" font-size="11" font-family="DM Mono">EDGE</text>
-      <line x1="675" y1="170" x2="505" y2="290" stroke="#aaa" stroke-opacity=".35" stroke-dasharray="6 7"/>
-      <rect x="310" y="335" width="70" height="30" rx="3" fill="#111" stroke="#888"/>
-      <path d="M380 350 L435 340 L435 360 Z" fill="#111" stroke="#888"/>
-      <text x="345" y="326" text-anchor="middle" fill="#888" font-size="10" font-family="DM Mono">CAMERA</text>
-      <text x="475" y="405" text-anchor="middle" fill="#666" font-size="10" font-family="DM Mono">SUBJECT · EYE LEVEL</text>`;
-  } else {
-    diagramContent.innerHTML = `${common}
-      <rect x="100" y="75" width="700" height="320" rx="4" fill="none" stroke="#202020" stroke-width="2"/>
-      <circle cx="470" cy="235" r="34" fill="#111" stroke="#aaa"/>
-      <text x="470" y="239" text-anchor="middle" fill="#aaa" font-size="10" font-family="DM Mono">SUBJECT</text>
-      <path d="M275 350 L335 330 L335 370 Z" fill="#111" stroke="#888"/>
-      <text x="275" y="386" text-anchor="middle" fill="#888" font-size="10" font-family="DM Mono">CAMERA · 50–65mm</text>
-      <rect x="170" y="120" width="62" height="46" rx="4" fill="#151515" stroke="#e7ff5a"/>
-      <text x="201" y="108" text-anchor="middle" fill="#e7ff5a" font-size="10" font-family="DM Mono">KEY / SOFT</text>
-      <line x1="232" y1="143" x2="435" y2="220" stroke="#e7ff5a" stroke-opacity=".45" stroke-dasharray="6 7" marker-end="url(#arrow)"/>
-      <circle cx="690" cy="145" r="25" fill="#151515" stroke="#888"/>
-      <text x="690" y="149" text-anchor="middle" fill="#aaa" font-size="9" font-family="DM Mono">EDGE</text>
-      <line x1="670" y1="162" x2="495" y2="218" stroke="#aaa" stroke-opacity=".35" stroke-dasharray="6 7"/>
-      <rect x="640" y="285" width="75" height="46" rx="4" fill="#151515" stroke="#555"/>
-      <text x="677" y="313" text-anchor="middle" fill="#666" font-size="9" font-family="DM Mono">PRACTICAL</text>
-      <line x1="640" y1="305" x2="505" y2="245" stroke="#555" stroke-opacity=".4" stroke-dasharray="4 8"/>`;
-  }
-}
+function drawDiagram(view='top',a=currentAnalysis){const common='<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#e7ff5a"/></marker></defs>';if(!a){diagramContent.innerHTML=common+'<text x="450" y="235" text-anchor="middle" class="diagram-placeholder">'+(lang==='fa'?'برای ساخت ستاپ، یک فریم آپلود کنید':'UPLOAD A FRAME TO BUILD THE SETUP')+'</text>';return;}if(view==='side'){diagramContent.innerHTML=common+'<line x1="90" y1="370" x2="810" y2="370" stroke="#222" stroke-width="2"/><circle cx="475" cy="285" r="28" fill="none" stroke="#aaa"/><line x1="475" y1="313" x2="475" y2="365" stroke="#aaa" stroke-width="2"/><line x1="445" y1="340" x2="505" y2="340" stroke="#aaa"/><rect x="165" y="205" width="60" height="48" rx="4" fill="#151515" stroke="#e7ff5a"/><text x="195" y="195" text-anchor="middle" fill="#e7ff5a" font-size="11" font-family="DM Mono">KEY · SOFT</text><line x1="225" y1="235" x2="445" y2="292" stroke="#e7ff5a" stroke-opacity=".45" stroke-dasharray="6 7" marker-end="url(#arrow)"/><rect x="675" y="130" width="55" height="42" rx="4" fill="#151515" stroke="#aaa"/><text x="702" y="118" text-anchor="middle" fill="#aaa" font-size="11" font-family="DM Mono">EDGE</text><line x1="675" y1="170" x2="505" y2="290" stroke="#aaa" stroke-opacity=".35" stroke-dasharray="6 7"/><rect x="310" y="335" width="70" height="30" rx="3" fill="#111" stroke="#888"/><path d="M380 350 L435 340 L435 360 Z" fill="#111" stroke="#888"/><text x="345" y="326" text-anchor="middle" fill="#888" font-size="10" font-family="DM Mono">CAMERA</text><text x="475" y="405" text-anchor="middle" fill="#666" font-size="10" font-family="DM Mono">SUBJECT · EYE LEVEL</text>';}else{diagramContent.innerHTML=common+'<rect x="100" y="75" width="700" height="320" rx="4" fill="none" stroke="#202020" stroke-width="2"/><circle cx="470" cy="235" r="34" fill="#111" stroke="#aaa"/><text x="470" y="239" text-anchor="middle" fill="#aaa" font-size="10" font-family="DM Mono">SUBJECT</text><path d="M275 350 L335 330 L335 370 Z" fill="#111" stroke="#888"/><text x="275" y="386" text-anchor="middle" fill="#888" font-size="10" font-family="DM Mono">CAMERA · 50–65mm</text><rect x="170" y="120" width="62" height="46" rx="4" fill="#151515" stroke="#e7ff5a"/><text x="201" y="108" text-anchor="middle" fill="#e7ff5a" font-size="10" font-family="DM Mono">KEY / SOFT</text><line x1="232" y1="143" x2="435" y2="220" stroke="#e7ff5a" stroke-opacity=".45" stroke-dasharray="6 7" marker-end="url(#arrow)"/><circle cx="690" cy="145" r="25" fill="#151515" stroke="#888"/><text x="690" y="149" text-anchor="middle" fill="#aaa" font-size="9" font-family="DM Mono">EDGE</text><line x1="670" y1="162" x2="495" y2="218" stroke="#aaa" stroke-opacity=".35" stroke-dasharray="6 7"/><rect x="640" y="285" width="75" height="46" rx="4" fill="#151515" stroke="#555"/><text x="677" y="313" text-anchor="middle" fill="#666" font-size="9" font-family="DM Mono">PRACTICAL</text><line x1="640" y1="305" x2="505" y2="245" stroke="#555" stroke-opacity=".4" stroke-dasharray="4 8"/> ';}}
 
-function reset() {
-  currentFile = null;
-  fileInput.value = '';
-  preview.hidden = true;
-  preview.removeAttribute('src');
-  emptyState.hidden = false;
-  analyzeBtn.disabled = true;
-  analyzeBtn.innerHTML = 'Analyze frame <span>↗</span>';
-  resetBtn.hidden = true;
-  emptyBreakdown.hidden = false;
-  results.hidden = true;
-  diagramContent.innerHTML = '<text x="450" y="235" text-anchor="middle" class="diagram-placeholder">UPLOAD A FRAME TO BUILD THE SETUP</text>';
-}
+function reset(){currentFile=null;currentAnalysis=null;fileInput.value='';preview.hidden=true;preview.removeAttribute('src');emptyState.hidden=false;analyzeBtn.disabled=true;analyzeBtn.innerHTML=(translations[lang].analyze)+' <span>↗</span>';resetBtn.hidden=true;emptyBreakdown.hidden=false;results.hidden=true;drawDiagram(currentView,null);}
+applyLanguage();
